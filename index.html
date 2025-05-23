@@ -11,21 +11,22 @@
     <script>
         // Lucide アイコンの代替
         window.LucideReact = {
-            Plus: () => React.createElement('span', null, '+'),
-            Search: () => React.createElement('span', null, '🔍'),
-            Edit2: () => React.createElement('span', null, '✏️'),
-            Eye: () => React.createElement('span', null, '👁️'),
-            FileText: () => React.createElement('span', null, '📄'),
-            Users: () => React.createElement('span', null, '👥'),
-            MessageSquare: () => React.createElement('span', null, '💬'),
-            Settings: () => React.createElement('span', null, '⚙️'),
-            Calendar: () => React.createElement('span', null, '📅'),
-            DollarSign: () => React.createElement('span', null, '💰'),
-            TrendingUp: () => React.createElement('span', null, '📈'),
-            BarChart3: () => React.createElement('span', null, '📊'),
-            Lock: () => React.createElement('span', null, '🔒'),
-            User: () => React.createElement('span', null, '👤'),
-            LogOut: () => React.createElement('span', null, '🚪')
+            Plus: () => React.createElement('span', {className: 'text-lg'}, '+'),
+            Search: () => React.createElement('span', {className: 'text-lg'}, '🔍'),
+            Edit2: () => React.createElement('span', {className: 'text-lg'}, '✏️'),
+            Eye: () => React.createElement('span', {className: 'text-lg'}, '👁️'),
+            FileText: () => React.createElement('span', {className: 'text-lg'}, '📄'),
+            Users: () => React.createElement('span', {className: 'text-lg'}, '👥'),
+            MessageSquare: () => React.createElement('span', {className: 'text-lg'}, '💬'),
+            Settings: () => React.createElement('span', {className: 'text-lg'}, '⚙️'),
+            Calendar: () => React.createElement('span', {className: 'text-lg'}, '📅'),
+            DollarSign: () => React.createElement('span', {className: 'text-lg'}, '💰'),
+            TrendingUp: () => React.createElement('span', {className: 'text-lg'}, '📈'),
+            BarChart3: () => React.createElement('span', {className: 'text-lg'}, '📊'),
+            Lock: () => React.createElement('span', {className: 'text-lg'}, '🔒'),
+            User: () => React.createElement('span', {className: 'text-lg'}, '👤'),
+            LogOut: () => React.createElement('span', {className: 'text-lg'}, '🚪'),
+            Filter: () => React.createElement('span', {className: 'text-lg'}, '🔽')
         };
     </script>
 </head>
@@ -34,15 +35,23 @@
     
     <script type="text/babel">
         const { useState, useEffect } = React;
-        const { Plus, Search, Edit2, Eye, FileText, Users, MessageSquare, Settings, Calendar, DollarSign, TrendingUp, BarChart3, Lock, User, LogOut } = window.LucideReact;
+        const { Plus, Search, Edit2, Eye, FileText, Users, MessageSquare, Settings, Calendar, DollarSign, TrendingUp, BarChart3, Lock, User, LogOut, Filter } = window.LucideReact;
 
         const KimonoManagementSystem = () => {
             const [isLoggedIn, setIsLoggedIn] = useState(false);
             const [currentUser, setCurrentUser] = useState(null);
-            const [showLogin, setShowLogin] = useState(true);
+            const [activeTab, setActiveTab] = useState('dashboard');
             const [showUserManagement, setShowUserManagement] = useState(false);
             const [loginForm, setLoginForm] = useState({ email: '', password: '' });
             const [loginError, setLoginError] = useState('');
+
+            // データ管理
+            const [projects, setProjects] = useState([]);
+            const [communications, setCommunications] = useState([]);
+            const [estimates, setEstimates] = useState([]);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [filterStatus, setFilterStatus] = useState('all');
+            const [showNewProject, setShowNewProject] = useState(false);
 
             // ユーザー管理
             const [users, setUsers] = useState([
@@ -52,6 +61,103 @@
                 { id: 4, email: 'jyogahara@kimono.com', password: 'jyoga123', name: '城ヶ原', role: 'staff', isActive: true },
                 { id: 5, email: 'aoki@kimono.com', password: 'aoki123', name: '青木', role: 'staff', isActive: true }
             ]);
+
+            const [newUser, setNewUser] = useState({
+                email: '',
+                password: '',
+                name: '',
+                role: 'staff'
+            });
+
+            // 新規案件フォーム
+            const [newProject, setNewProject] = useState({
+                clientName: '',
+                prefecture: '',
+                scene: '',
+                clientType: '',
+                staff: '',
+                source: '',
+                generatedDate: new Date().toISOString().split('T')[0],
+                implementationDate: '',
+                status: '案件発生（未連絡）',
+                services: [],
+                totalAmount: 0,
+                confirmed: false
+            });
+
+            // マスターデータ
+            const masterData = {
+                prefectures: ['北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県', '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県'],
+                scenes: ['お宮参り', '七五三', '成人式', '卒業式', '入学式', '結婚式', '葬式', 'アイドル', 'イベント'],
+                clientTypes: ['個人', 'ホテル', '旅行会社', 'イベント会社', '芸能関連', 'キャバクラ', '教育関連', '美容室', '写真館'],
+                staff: ['堀', '大佐々', '城ヶ原', '青木'],
+                sources: ['電話問い合わせ', 'LINE問い合わせ', 'メール問い合わせ', '城ヶ原営業リスト', '大佐々営業リスト', '堀営業リスト', '青木営業リスト', '紹介', '新規営業'],
+                statuses: ['案件発生（未連絡）', '商談中', '受注未実施未入金', '受注未実施入金済', '受注実施済未入金', '案件完了'],
+                services: [
+                    { name: '[貸衣装・着付け]女性浴衣ベーシックプラン', price: 6500, unit: '名' },
+                    { name: '[貸衣装・着付け]女性浴衣ハイグレードプラン', price: 11000, unit: '名' },
+                    { name: '[貸衣装・着付け]女性着物ベーシックプラン', price: 6500, unit: '名' },
+                    { name: '[貸衣装・着付け]女性着物ハイグレードプラン', price: 11000, unit: '名' },
+                    { name: '[貸衣装・着付け]女性訪問着ベーシックプラン', price: 15000, unit: '名' },
+                    { name: '[貸衣装・着付け]女性訪問着ハイグレードプラン', price: 25000, unit: '名' },
+                    { name: '[貸衣装・着付け]女性訪問着プラチナプラン', price: 35000, unit: '名' },
+                    { name: '[貸衣装・着付け]女性袴ベーシックプラン', price: 25000, unit: '名' },
+                    { name: '[貸衣装・着付け]女性袴ハイグレードプラン', price: 35000, unit: '名' }
+                ]
+            };
+
+            // サンプルデータ初期化
+            useEffect(() => {
+                if (isLoggedIn) {
+                    const sampleProjects = [
+                        {
+                            id: 1,
+                            clientName: '田中様',
+                            prefecture: '東京都',
+                            scene: '七五三',
+                            clientType: '個人',
+                            staff: '堀',
+                            source: '電話問い合わせ',
+                            generatedDate: '2025-05-20',
+                            implementationDate: '2025-06-15',
+                            status: '商談中',
+                            services: [{ name: '[貸衣装・着付け]女性着物ベーシックプラン', price: 6500, quantity: 1 }],
+                            totalAmount: 6500,
+                            confirmed: false
+                        },
+                        {
+                            id: 2,
+                            clientName: '佐藤様',
+                            prefecture: '神奈川県',
+                            scene: '成人式',
+                            clientType: '個人',
+                            staff: '大佐々',
+                            source: 'LINE問い合わせ',
+                            generatedDate: '2025-05-18',
+                            implementationDate: '2025-07-10',
+                            status: '受注未実施入金済',
+                            services: [{ name: '[貸衣装・着付け]女性訪問着ハイグレードプラン', price: 25000, quantity: 2 }],
+                            totalAmount: 50000,
+                            confirmed: true
+                        }
+                    ];
+                    setProjects(sampleProjects);
+
+                    const sampleCommunications = [
+                        {
+                            id: 1,
+                            projectId: 1,
+                            clientName: '田中様',
+                            date: '2025-05-21',
+                            content: '七五三の詳細について電話でご相談',
+                            from: '堀',
+                            to: '田中様',
+                            response: '6月中旬希望とのこと'
+                        }
+                    ];
+                    setCommunications(sampleCommunications);
+                }
+            }, [isLoggedIn]);
 
             // ログイン処理
             const handleLogin = () => {
@@ -64,12 +170,124 @@
                 if (user) {
                     setCurrentUser(user);
                     setIsLoggedIn(true);
-                    setShowLogin(false);
                     setLoginError('');
                     setLoginForm({ email: '', password: '' });
                 } else {
                     setLoginError('メールアドレスまたはパスワードが正しくありません');
                 }
+            };
+
+            // ログアウト処理
+            const handleLogout = () => {
+                setCurrentUser(null);
+                setIsLoggedIn(false);
+                setActiveTab('dashboard');
+            };
+
+            // 統計計算
+            const dashboardStats = {
+                totalProjects: projects.length,
+                activeProjects: projects.filter(p => p.status !== '案件完了').length,
+                totalRevenue: projects.reduce((sum, p) => sum + (p.confirmed ? p.totalAmount : 0), 0),
+                completedProjects: projects.filter(p => p.status === '案件完了').length
+            };
+
+            // フィルタリング
+            const filteredProjects = projects.filter(project => {
+                const matchesSearch = project.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                     project.scene.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesFilter = filterStatus === 'all' || project.status === filterStatus;
+                return matchesSearch && matchesFilter;
+            });
+
+            // サービス追加
+            const addService = () => {
+                setNewProject(prev => ({
+                    ...prev,
+                    services: [...prev.services, { name: '', price: 0, quantity: 1 }]
+                }));
+            };
+
+            // サービス更新
+            const updateService = (index, field, value) => {
+                const updatedServices = [...newProject.services];
+                updatedServices[index][field] = value;
+                
+                if (field === 'name') {
+                    const service = masterData.services.find(s => s.name === value);
+                    if (service) {
+                        updatedServices[index].price = service.price;
+                    }
+                }
+                
+                setNewProject(prev => ({
+                    ...prev,
+                    services: updatedServices,
+                    totalAmount: updatedServices.reduce((sum, s) => sum + (s.price * s.quantity), 0)
+                }));
+            };
+
+            // 新規案件保存
+            const saveNewProject = () => {
+                const project = {
+                    ...newProject,
+                    id: projects.length + 1
+                };
+                setProjects([...projects, project]);
+                setNewProject({
+                    clientName: '',
+                    prefecture: '',
+                    scene: '',
+                    clientType: '',
+                    staff: '',
+                    source: '',
+                    generatedDate: new Date().toISOString().split('T')[0],
+                    implementationDate: '',
+                    status: '案件発生（未連絡）',
+                    services: [],
+                    totalAmount: 0,
+                    confirmed: false
+                });
+                setShowNewProject(false);
+            };
+
+            // 見積書生成
+            const generateEstimate = (project) => {
+                const estimate = {
+                    id: estimates.length + 1,
+                    projectId: project.id,
+                    clientName: project.clientName,
+                    date: new Date().toISOString().split('T')[0],
+                    services: project.services,
+                    totalAmount: project.totalAmount,
+                    paymentTerms: '実施日の1週間前までに事前お振込み',
+                    validity: '発行から一ヶ月'
+                };
+                setEstimates([...estimates, estimate]);
+                alert('見積書が生成されました');
+            };
+
+            // ユーザー追加
+            const addUser = () => {
+                if (!newUser.email || !newUser.password || !newUser.name) {
+                    alert('すべての項目を入力してください');
+                    return;
+                }
+
+                if (users.some(u => u.email === newUser.email)) {
+                    alert('このメールアドレスは既に使用されています');
+                    return;
+                }
+
+                const user = {
+                    id: users.length + 1,
+                    ...newUser,
+                    isActive: true
+                };
+
+                setUsers([...users, user]);
+                setNewUser({ email: '', password: '', name: '', role: 'staff' });
+                alert('ユーザーが追加されました');
             };
 
             // ログイン画面
@@ -128,33 +346,578 @@
                 );
             }
 
+            // ダッシュボード
+            const renderDashboard = () => (
+                React.createElement('div', { className: 'space-y-6' },
+                    React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-6' },
+                        React.createElement('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-6' },
+                            React.createElement('div', { className: 'flex items-center justify-between' },
+                                React.createElement('div', null,
+                                    React.createElement('p', { className: 'text-blue-600 text-sm font-medium' }, '総案件数'),
+                                    React.createElement('p', { className: 'text-2xl font-bold text-blue-900' }, dashboardStats.totalProjects)
+                                ),
+                                React.createElement(BarChart3, { className: 'h-8 w-8 text-blue-600' })
+                            )
+                        ),
+                        React.createElement('div', { className: 'bg-green-50 border border-green-200 rounded-lg p-6' },
+                            React.createElement('div', { className: 'flex items-center justify-between' },
+                                React.createElement('div', null,
+                                    React.createElement('p', { className: 'text-green-600 text-sm font-medium' }, '進行中案件'),
+                                    React.createElement('p', { className: 'text-2xl font-bold text-green-900' }, dashboardStats.activeProjects)
+                                ),
+                                React.createElement(TrendingUp, { className: 'h-8 w-8 text-green-600' })
+                            )
+                        ),
+                        React.createElement('div', { className: 'bg-purple-50 border border-purple-200 rounded-lg p-6' },
+                            React.createElement('div', { className: 'flex items-center justify-between' },
+                                React.createElement('div', null,
+                                    React.createElement('p', { className: 'text-purple-600 text-sm font-medium' }, '確定売上'),
+                                    React.createElement('p', { className: 'text-2xl font-bold text-purple-900' }, '¥' + dashboardStats.totalRevenue.toLocaleString())
+                                ),
+                                React.createElement(DollarSign, { className: 'h-8 w-8 text-purple-600' })
+                            )
+                        ),
+                        React.createElement('div', { className: 'bg-orange-50 border border-orange-200 rounded-lg p-6' },
+                            React.createElement('div', { className: 'flex items-center justify-between' },
+                                React.createElement('div', null,
+                                    React.createElement('p', { className: 'text-orange-600 text-sm font-medium' }, '完了案件'),
+                                    React.createElement('p', { className: 'text-2xl font-bold text-orange-900' }, dashboardStats.completedProjects)
+                                ),
+                                React.createElement(Calendar, { className: 'h-8 w-8 text-orange-600' })
+                            )
+                        )
+                    ),
+                    React.createElement('div', { className: 'bg-white rounded-lg shadow-sm border border-gray-200 p-6' },
+                        React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '最近の案件'),
+                        React.createElement('div', { className: 'space-y-3' },
+                            projects.slice(0, 5).map(project => (
+                                React.createElement('div', { key: project.id, className: 'flex items-center justify-between p-3 bg-gray-50 rounded' },
+                                    React.createElement('div', null,
+                                        React.createElement('p', { className: 'font-medium' }, project.clientName),
+                                        React.createElement('p', { className: 'text-sm text-gray-600' }, project.scene + ' | ' + project.status)
+                                    ),
+                                    React.createElement('div', { className: 'text-right' },
+                                        React.createElement('p', { className: 'font-medium' }, '¥' + project.totalAmount.toLocaleString()),
+                                        React.createElement('p', { className: 'text-sm text-gray-600' }, project.implementationDate)
+                                    )
+                                )
+                            ))
+                        )
+                    )
+                )
+            );
+
+            // 案件管理
+            const renderProjects = () => (
+                React.createElement('div', { className: 'space-y-6' },
+                    React.createElement('div', { className: 'flex flex-col sm:flex-row gap-4 items-center justify-between' },
+                        React.createElement('div', { className: 'flex gap-4 w-full sm:w-auto' },
+                            React.createElement('div', { className: 'relative flex-1 sm:w-64' },
+                                React.createElement(Search, { className: 'absolute left-3 top-2.5 h-4 w-4 text-gray-400' }),
+                                React.createElement('input', {
+                                    type: 'text',
+                                    placeholder: '案件を検索...',
+                                    className: 'pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full',
+                                    value: searchTerm,
+                                    onChange: (e) => setSearchTerm(e.target.value)
+                                })
+                            ),
+                            React.createElement('select', {
+                                className: 'px-4 py-2 border border-gray-300 rounded-lg',
+                                value: filterStatus,
+                                onChange: (e) => setFilterStatus(e.target.value)
+                            },
+                                React.createElement('option', { value: 'all' }, '全ステータス'),
+                                masterData.statuses.map(status => (
+                                    React.createElement('option', { key: status, value: status }, status)
+                                ))
+                            )
+                        ),
+                        React.createElement('button', {
+                            onClick: () => setShowNewProject(true),
+                            className: 'bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700'
+                        },
+                            React.createElement(Plus, { className: 'h-4 w-4' }),
+                            '新規案件'
+                        )
+                    ),
+                    React.createElement('div', { className: 'bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden' },
+                        React.createElement('div', { className: 'overflow-x-auto' },
+                            React.createElement('table', { className: 'min-w-full divide-y divide-gray-200' },
+                                React.createElement('thead', { className: 'bg-gray-50' },
+                                    React.createElement('tr', null,
+                                        React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '案件No.'),
+                                        React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '依頼者名'),
+                                        React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, 'シーン'),
+                                        React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '実施日'),
+                                        React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '状況'),
+                                        React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '金額'),
+                                        React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '操作')
+                                    )
+                                ),
+                                React.createElement('tbody', { className: 'bg-white divide-y divide-gray-200' },
+                                    filteredProjects.map((project) => (
+                                        React.createElement('tr', { key: project.id, className: 'hover:bg-gray-50' },
+                                            React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900' }, project.id),
+                                            React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' }, project.clientName),
+                                            React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' }, project.scene),
+                                            React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' }, project.implementationDate),
+                                            React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap' },
+                                                React.createElement('span', {
+                                                    className: `px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                        project.status === '案件完了' ? 'bg-green-100 text-green-800' :
+                                                        project.status === '商談中' ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-blue-100 text-blue-800'
+                                                    }`
+                                                }, project.status)
+                                            ),
+                                            React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' }, '¥' + project.totalAmount.toLocaleString()),
+                                            React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm font-medium' },
+                                                React.createElement('div', { className: 'flex gap-2' },
+                                                    React.createElement('button', { className: 'text-blue-600 hover:text-blue-900' }, React.createElement(Eye, { className: 'h-4 w-4' })),
+                                                    React.createElement('button', { className: 'text-green-600 hover:text-green-900' }, React.createElement(Edit2, { className: 'h-4 w-4' })),
+                                                    React.createElement('button', {
+                                                        onClick: () => generateEstimate(project),
+                                                        className: 'text-purple-600 hover:text-purple-900'
+                                                    }, React.createElement(FileText, { className: 'h-4 w-4' }))
+                                                )
+                                            )
+                                        )
+                                    ))
+                                )
+                            )
+                        )
+                    ),
+                    // 新規案件追加モーダル
+                    showNewProject && React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50' },
+                        React.createElement('div', { className: 'bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto' },
+                            React.createElement('h2', { className: 'text-xl font-semibold mb-4' }, '新規案件追加'),
+                            React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-6' },
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, '依頼者名'),
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        className: 'w-full px-3 py-2 border border-gray-300 rounded-lg',
+                                        value: newProject.clientName,
+                                        onChange: (e) => setNewProject({...newProject, clientName: e.target.value})
+                                    })
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, '都道府県'),
+                                    React.createElement('select', {
+                                        className: 'w-full px-3 py-2 border border-gray-300 rounded-lg',
+                                        value: newProject.prefecture,
+                                        onChange: (e) => setNewProject({...newProject, prefecture: e.target.value})
+                                    },
+                                        React.createElement('option', { value: '' }, '選択してください'),
+                                        masterData.prefectures.map(pref => (
+                                            React.createElement('option', { key: pref, value: pref }, pref)
+                                        ))
+                                    )
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'シーン'),
+                                    React.createElement('select', {
+                                        className: 'w-full px-3 py-2 border border-gray-300 rounded-lg',
+                                        value: newProject.scene,
+                                        onChange: (e) => setNewProject({...newProject, scene: e.target.value})
+                                    },
+                                        React.createElement('option', { value: '' }, '選択してください'),
+                                        masterData.scenes.map(scene => (
+                                            React.createElement('option', { key: scene, value: scene }, scene)
+                                        ))
+                                    )
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, '実施日'),
+                                    React.createElement('input', {
+                                        type: 'date',
+                                        className: 'w-full px-3 py-2 border border-gray-300 rounded-lg',
+                                        value: newProject.implementationDate,
+                                        onChange: (e) => setNewProject({...newProject, implementationDate: e.target.value})
+                                    })
+                                )
+                            ),
+                            React.createElement('div', { className: 'mb-6' },
+                                React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                                    React.createElement('h3', { className: 'text-lg font-medium' }, 'サービス内容'),
+                                    React.createElement('button', {
+                                        onClick: addService,
+                                        className: 'bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700'
+                                    }, 'サービス追加')
+                                ),
+                                newProject.services.map((service, index) => (
+                                    React.createElement('div', { key: index, className: 'grid grid-cols-1 md:grid-cols-4 gap-2 mb-2' },
+                                        React.createElement('select', {
+                                            className: 'px-3 py-2 border border-gray-300 rounded-lg col-span-2',
+                                            value: service.name,
+                                            onChange: (e) => updateService(index, 'name', e.target.value)
+                                        },
+                                            React.createElement('option', { value: '' }, 'サービスを選択'),
+                                            masterData.services.map(s => (
+                                                React.createElement('option', { key: s.name, value: s.name }, s.name)
+                                            ))
+                                        ),
+                                        React.createElement('input', {
+                                            type: 'number',
+                                            placeholder: '数量',
+                                            className: 'px-3 py-2 border border-gray-300 rounded-lg',
+                                            value: service.quantity,
+                                            onChange: (e) => updateService(index, 'quantity', parseInt(e.target.value) || 1)
+                                        }),
+                                        React.createElement('div', { className: 'px-3 py-2 bg-gray-100 rounded-lg' }, '¥' + (service.price * service.quantity).toLocaleString())
+                                    )
+                                )),
+                                React.createElement('div', { className: 'text-right mt-4' },
+                                    React.createElement('p', { className: 'text-lg font-semibold' }, '合計: ¥' + newProject.totalAmount.toLocaleString())
+                                )
+                            ),
+                            React.createElement('div', { className: 'flex gap-4 justify-end' },
+                                React.createElement('button', {
+                                    onClick: () => setShowNewProject(false),
+                                    className: 'px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50'
+                                }, 'キャンセル'),
+                                React.createElement('button', {
+                                    onClick: saveNewProject,
+                                    className: 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700'
+                                }, '保存')
+                            )
+                        )
+                    )
+                )
+            );
+
+            // 見積書管理
+            const renderEstimates = () => (
+                React.createElement('div', { className: 'space-y-6' },
+                    React.createElement('div', { className: 'flex justify-between items-center' },
+                        React.createElement('h2', { className: 'text-xl font-semibold' }, '見積書管理')
+                    ),
+                    React.createElement('div', { className: 'grid gap-6' },
+                        estimates.map((estimate) => (
+                            React.createElement('div', { key: estimate.id, className: 'bg-white rounded-lg shadow-sm border border-gray-200 p-6' },
+                                React.createElement('div', { className: 'flex justify-between items-start mb-6' },
+                                    React.createElement('div', null,
+                                        React.createElement('h3', { className: 'text-xl font-bold mb-2' }, '御見積書'),
+                                        React.createElement('p', { className: 'text-sm text-gray-600' }, '御見積書番号: ' + estimate.id),
+                                        React.createElement('p', { className: 'text-sm text-gray-600' }, '作成日: ' + estimate.date)
+                                    ),
+                                    React.createElement('div', { className: 'text-right' },
+                                        React.createElement('p', { className: 'font-bold' }, '株式会社　出張着付け.com'),
+                                        React.createElement('p', { className: 'text-sm' }, '〒170-0005 東京都港区高輪4‐18‐12'),
+                                        React.createElement('p', { className: 'text-sm' }, 'TEL 050-5444-0339')
+                                    )
+                                ),
+                                React.createElement('div', { className: 'mb-6' },
+                                    React.createElement('p', { className: 'mb-2' }, React.createElement('span', { className: 'font-medium' }, '件名: '), '出張着付けお見積り'),
+                                    React.createElement('p', { className: 'mb-2' }, React.createElement('span', { className: 'font-medium' }, 'お客様: '), estimate.clientName),
+                                    React.createElement('p', { className: 'mb-2' }, React.createElement('span', { className: 'font-medium' }, '支払条件: '), estimate.paymentTerms),
+                                    React.createElement('p', { className: 'mb-2' }, React.createElement('span', { className: 'font-medium' }, '有効期限: '), estimate.validity)
+                                ),
+                                React.createElement('div', { className: 'border rounded-lg overflow-hidden mb-4' },
+                                    React.createElement('table', { className: 'min-w-full' },
+                                        React.createElement('thead', { className: 'bg-gray-50' },
+                                            React.createElement('tr', null,
+                                                React.createElement('th', { className: 'px-4 py-3 text-left text-sm font-medium text-gray-900' }, '項目'),
+                                                React.createElement('th', { className: 'px-4 py-3 text-left text-sm font-medium text-gray-900' }, '単価'),
+                                                React.createElement('th', { className: 'px-4 py-3 text-left text-sm font-medium text-gray-900' }, '数量'),
+                                                React.createElement('th', { className: 'px-4 py-3 text-left text-sm font-medium text-gray-900' }, '小計')
+                                            )
+                                        ),
+                                        React.createElement('tbody', { className: 'divide-y divide-gray-200' },
+                                            estimate.services.map((service, index) => (
+                                                React.createElement('tr', { key: index },
+                                                    React.createElement('td', { className: 'px-4 py-3 text-sm' }, service.name),
+                                                    React.createElement('td', { className: 'px-4 py-3 text-sm' }, '¥' + service.price.toLocaleString()),
+                                                    React.createElement('td', { className: 'px-4 py-3 text-sm' }, service.quantity),
+                                                    React.createElement('td', { className: 'px-4 py-3 text-sm' }, '¥' + (service.price * service.quantity).toLocaleString())
+                                                )
+                                            ))
+                                        ),
+                                        React.createElement('tfoot', { className: 'bg-gray-50' },
+                                            React.createElement('tr', null,
+                                                React.createElement('td', { colSpan: '3', className: 'px-4 py-3 text-sm font-medium text-right' }, '合計金額（税別）'),
+                                                React.createElement('td', { className: 'px-4 py-3 text-sm font-bold' }, '¥' + estimate.totalAmount.toLocaleString())
+                                            )
+                                        )
+                                    )
+                                ),
+                                React.createElement('div', { className: 'flex justify-end gap-2' },
+                                    React.createElement('button', { className: 'px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700' }, '印刷'),
+                                    React.createElement('button', { className: 'px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700' }, 'PDF出力')
+                                )
+                            )
+                        )),
+                        estimates.length === 0 && React.createElement('div', { className: 'text-center py-12 text-gray-500' },
+                            React.createElement(FileText, { className: 'h-12 w-12 mx-auto mb-4 text-gray-400' }),
+                            React.createElement('p', null, '見積書がありません'),
+                            React.createElement('p', { className: 'text-sm' }, '案件から見積書を生成してください')
+                        )
+                    )
+                )
+            );
+
+            // 社内連絡
+            const renderCommunications = () => (
+                React.createElement('div', { className: 'space-y-6' },
+                    React.createElement('div', { className: 'flex justify-between items-center' },
+                        React.createElement('h2', { className: 'text-xl font-semibold' }, '社内連絡'),
+                        React.createElement('button', { className: 'bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700' },
+                            React.createElement(Plus, { className: 'h-4 w-4' }),
+                            '新規連絡'
+                        )
+                    ),
+                    React.createElement('div', { className: 'bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden' },
+                        React.createElement('table', { className: 'min-w-full divide-y divide-gray-200' },
+                            React.createElement('thead', { className: 'bg-gray-50' },
+                                React.createElement('tr', null,
+                                    React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '案件No.'),
+                                    React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '取引先名'),
+                                    React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '記入日'),
+                                    React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '連絡事項'),
+                                    React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, 'From'),
+                                    React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, 'To')
+                                )
+                            ),
+                            React.createElement('tbody', { className: 'bg-white divide-y divide-gray-200' },
+                                communications.map((comm) => (
+                                    React.createElement('tr', { key: comm.id, className: 'hover:bg-gray-50' },
+                                        React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900' }, comm.projectId),
+                                        React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' }, comm.clientName),
+                                        React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' }, comm.date),
+                                        React.createElement('td', { className: 'px-6 py-4 text-sm text-gray-900 max-w-xs truncate' }, comm.content),
+                                        React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' }, comm.from),
+                                        React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' }, comm.to)
+                                    )
+                                ))
+                            )
+                        )
+                    )
+                )
+            );
+
+            // ユーザー管理
+            const renderUserManagement = () => (
+                React.createElement('div', { className: 'space-y-6' },
+                    React.createElement('div', { className: 'flex justify-between items-center' },
+                        React.createElement('h2', { className: 'text-xl font-semibold' }, 'ユーザー管理'),
+                        React.createElement('button', {
+                            onClick: () => setShowUserManagement(false),
+                            className: 'px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600'
+                        }, '戻る')
+                    ),
+                    React.createElement('div', { className: 'bg-white rounded-lg shadow-sm border border-gray-200 p-6' },
+                        React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '新規ユーザー追加'),
+                        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-4' },
+                            React.createElement('input', {
+                                type: 'email',
+                                placeholder: 'メールアドレス',
+                                className: 'px-3 py-2 border border-gray-300 rounded-lg',
+                                value: newUser.email,
+                                onChange: (e) => setNewUser({...newUser, email: e.target.value})
+                            }),
+                            React.createElement('input', {
+                                type: 'password',
+                                placeholder: 'パスワード',
+                                className: 'px-3 py-2 border border-gray-300 rounded-lg',
+                                value: newUser.password,
+                                onChange: (e) => setNewUser({...newUser, password: e.target.value})
+                            }),
+                            React.createElement('input', {
+                                type: 'text',
+                                placeholder: '名前',
+                                className: 'px-3 py-2 border border-gray-300 rounded-lg',
+                                value: newUser.name,
+                                onChange: (e) => setNewUser({...newUser, name: e.target.value})
+                            }),
+                            React.createElement('select', {
+                                className: 'px-3 py-2 border border-gray-300 rounded-lg',
+                                value: newUser.role,
+                                onChange: (e) => setNewUser({...newUser, role: e.target.value})
+                            },
+                                React.createElement('option', { value: 'staff' }, 'スタッフ'),
+                                React.createElement('option', { value: 'admin' }, '管理者')
+                            )
+                        ),
+                        React.createElement('button', {
+                            onClick: addUser,
+                            className: 'mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700'
+                        }, 'ユーザー追加')
+                    ),
+                    React.createElement('div', { className: 'bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden' },
+                        React.createElement('table', { className: 'min-w-full divide-y divide-gray-200' },
+                            React.createElement('thead', { className: 'bg-gray-50' },
+                                React.createElement('tr', null,
+                                    React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, 'ID'),
+                                    React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '名前'),
+                                    React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, 'メールアドレス'),
+                                    React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '役割'),
+                                    React.createElement('th', { className: 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' }, '状態')
+                                )
+                            ),
+                            React.createElement('tbody', { className: 'bg-white divide-y divide-gray-200' },
+                                users.map((user) => (
+                                    React.createElement('tr', { key: user.id, className: 'hover:bg-gray-50' },
+                                        React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900' }, user.id),
+                                        React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' }, user.name),
+                                        React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' }, user.email),
+                                        React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' },
+                                            React.createElement('span', {
+                                                className: `px-2 py-1 text-xs rounded-full ${
+                                                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                                                }`
+                                            }, user.role === 'admin' ? '管理者' : 'スタッフ')
+                                        ),
+                                        React.createElement('td', { className: 'px-6 py-4 whitespace-nowrap text-sm text-gray-900' },
+                                            React.createElement('span', {
+                                                className: `px-2 py-1 text-xs rounded-full ${
+                                                    user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                }`
+                                            }, user.isActive ? 'アクティブ' : '無効')
+                                        )
+                                    )
+                                ))
+                            )
+                        )
+                    )
+                )
+            );
+
+            // メインアプリケーション
+            if (showUserManagement && currentUser?.role === 'admin') {
+                return React.createElement('div', { className: 'min-h-screen bg-gray-50' },
+                    React.createElement('header', { className: 'bg-white shadow-sm border-b border-gray-200' },
+                        React.createElement('div', { className: 'px-6 py-4' },
+                            React.createElement('div', { className: 'flex items-center justify-between' },
+                                React.createElement('h1', { className: 'text-2xl font-bold text-gray-900' }, '着付け案件管理システム - ユーザー管理'),
+                                React.createElement('div', { className: 'flex items-center gap-4' },
+                                    React.createElement('span', { className: 'text-sm text-gray-600' }, 'ログイン中: ' + currentUser.name),
+                                    React.createElement('button', {
+                                        onClick: handleLogout,
+                                        className: 'flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900'
+                                    },
+                                        React.createElement(LogOut, { className: 'h-4 w-4' }),
+                                        'ログアウト'
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    React.createElement('div', { className: 'p-6' }, renderUserManagement())
+                );
+            }
+
             return React.createElement('div', { className: 'min-h-screen bg-gray-50' },
-                React.createElement('div', { className: 'bg-white shadow-sm border-b border-gray-200 p-4' },
-                    React.createElement('div', { className: 'flex items-center justify-between' },
-                        React.createElement('h1', { className: 'text-2xl font-bold text-gray-900' }, '着付け案件管理システム'),
-                        React.createElement('div', { className: 'flex items-center gap-4' },
-                            React.createElement('span', { className: 'text-sm text-gray-600' }, 'ログイン中: ', currentUser?.name),
-                            React.createElement('button', {
-                                onClick: () => setIsLoggedIn(false),
-                                className: 'flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900'
-                            }, React.createElement(LogOut), 'ログアウト')
+                React.createElement('header', { className: 'bg-white shadow-sm border-b border-gray-200' },
+                    React.createElement('div', { className: 'px-6 py-4' },
+                        React.createElement('div', { className: 'flex items-center justify-between' },
+                            React.createElement('h1', { className: 'text-2xl font-bold text-gray-900' }, '着付け案件管理システム'),
+                            React.createElement('div', { className: 'flex items-center gap-4' },
+                                React.createElement('span', { className: 'text-sm text-gray-600' }, 'ログイン中: ' + currentUser?.name),
+                                currentUser?.role === 'admin' && React.createElement('button', {
+                                    onClick: () => setShowUserManagement(true),
+                                    className: 'flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-800'
+                                },
+                                    React.createElement(User, { className: 'h-4 w-4' }),
+                                    'ユーザー管理'
+                                ),
+                                React.createElement('button', {
+                                    onClick: handleLogout,
+                                    className: 'flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900'
+                                },
+                                    React.createElement(LogOut, { className: 'h-4 w-4' }),
+                                    'ログアウト'
+                                ),
+                                React.createElement('div', { className: 'text-sm text-gray-600' },
+                                    new Date().toLocaleDateString('ja-JP')
+                                )
+                            )
                         )
                     )
                 ),
-                React.createElement('div', { className: 'p-8 text-center' },
-                    React.createElement('h2', { className: 'text-3xl font-bold text-green-600 mb-4' }, '🎉 デプロイ成功！'),
-                    React.createElement('p', { className: 'text-lg text-gray-700 mb-6' }, '着付け案件管理システムがWEBで動作しています！'),
-                    React.createElement('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-6' },
-                        React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '利用可能なデモアカウント'),
-                        React.createElement('div', { className: 'text-left space-y-2 max-w-md mx-auto' },
-                            React.createElement('p', null, '👑 管理者: admin@kimono.com / admin123'),
-                            React.createElement('p', null, '👤 堀: hori@kimono.com / hori123'),
-                            React.createElement('p', null, '👤 大佐々: osasa@kimono.com / osasa123'),
-                            React.createElement('p', null, '👤 城ヶ原: jyogahara@kimono.com / jyoga123'),
-                            React.createElement('p', null, '👤 青木: aoki@kimono.com / aoki123')
+                React.createElement('div', { className: 'flex' },
+                    React.createElement('nav', { className: 'w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen' },
+                        React.createElement('div', { className: 'p-4' },
+                            React.createElement('ul', { className: 'space-y-2' },
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: () => setActiveTab('dashboard'),
+                                        className: `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left ${
+                                            activeTab === 'dashboard' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                                        }`
+                                    },
+                                        React.createElement(BarChart3, { className: 'h-5 w-5' }),
+                                        'ダッシュボード'
+                                    )
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: () => setActiveTab('projects'),
+                                        className: `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left ${
+                                            activeTab === 'projects' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                                        }`
+                                    },
+                                        React.createElement(Calendar, { className: 'h-5 w-5' }),
+                                        '案件管理'
+                                    )
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: () => setActiveTab('communications'),
+                                        className: `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left ${
+                                            activeTab === 'communications' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                                        }`
+                                    },
+                                        React.createElement(MessageSquare, { className: 'h-5 w-5' }),
+                                        '社内連絡'
+                                    )
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: () => setActiveTab('estimates'),
+                                        className: `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left ${
+                                            activeTab === 'estimates' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                                        }`
+                                    },
+                                        React.createElement(FileText, { className: 'h-5 w-5' }),
+                                        '見積書管理'
+                                    )
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: () => setActiveTab('staff'),
+                                        className: `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left ${
+                                            activeTab === 'staff' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                                        }`
+                                    },
+                                        React.createElement(Users, { className: 'h-5 w-5' }),
+                                        '着付け師管理'
+                                    )
+                                ),
+                                React.createElement('li', null,
+                                    React.createElement('button', {
+                                        onClick: () => setActiveTab('settings'),
+                                        className: `w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left ${
+                                            activeTab === 'settings' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                                        }`
+                                    },
+                                        React.createElement(Settings, { className: 'h-5 w-5' }),
+                                        '設定'
+                                    )
+                                )
+                            )
                         )
                     ),
-                    React.createElement('p', { className: 'text-sm text-gray-600 mt-6' }, 'ログアウト後、上記アカウントで再ログインしてシステムをお試しください')
+                    React.createElement('main', { className: 'flex-1 p-6' },
+                        activeTab === 'dashboard' && renderDashboard(),
+                        activeTab === 'projects' && renderProjects(),
+                        activeTab === 'communications' && renderCommunications(),
+                        activeTab === 'estimates' && renderEstimates(),
+                        (activeTab === 'staff' || activeTab === 'settings') && React.createElement('div', { className: 'text-center py-12' },
+                            React.createElement('h3', { className: 'text-lg font-semibold mb-2' }, activeTab === 'staff' ? '着付け師管理' : 'システム設定'),
+                            React.createElement('p', { className: 'text-gray-600' }, '機能準備中です')
+                        )
+                    )
                 )
             );
         };
