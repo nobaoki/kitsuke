@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>着付け案件管理システム</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Lucide アイコンの代替
+        window.LucideReact = {
+            Plus: () => React.createElement('span', null, '+'),
+            Search: () => React.createElement('span', null, '🔍'),
+            Edit2: () => React.createElement('span', null, '✏️'),
+            Eye: () => React.createElement('span', null, '👁️'),
+            FileText: () => React.createElement('span', null, '📄'),
+            Users: () => React.createElement('span', null, '👥'),
+            MessageSquare: () => React.createElement('span', null, '💬'),
+            Settings: () => React.createElement('span', null, '⚙️'),
+            Calendar: () => React.createElement('span', null, '📅'),
+            DollarSign: () => React.createElement('span', null, '💰'),
+            TrendingUp: () => React.createElement('span', null, '📈'),
+            BarChart3: () => React.createElement('span', null, '📊'),
+            Lock: () => React.createElement('span', null, '🔒'),
+            User: () => React.createElement('span', null, '👤'),
+            LogOut: () => React.createElement('span', null, '🚪')
+        };
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { Plus, Search, Edit2, Eye, FileText, Users, MessageSquare, Settings, Calendar, DollarSign, TrendingUp, BarChart3, Lock, User, LogOut } = window.LucideReact;
+
+        const KimonoManagementSystem = () => {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [currentUser, setCurrentUser] = useState(null);
+            const [showLogin, setShowLogin] = useState(true);
+            const [showUserManagement, setShowUserManagement] = useState(false);
+            const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+            const [loginError, setLoginError] = useState('');
+
+            // ユーザー管理
+            const [users, setUsers] = useState([
+                { id: 1, email: 'admin@kimono.com', password: 'admin123', name: '管理者', role: 'admin', isActive: true },
+                { id: 2, email: 'hori@kimono.com', password: 'hori123', name: '堀', role: 'staff', isActive: true },
+                { id: 3, email: 'osasa@kimono.com', password: 'osasa123', name: '大佐々', role: 'staff', isActive: true },
+                { id: 4, email: 'jyogahara@kimono.com', password: 'jyoga123', name: '城ヶ原', role: 'staff', isActive: true },
+                { id: 5, email: 'aoki@kimono.com', password: 'aoki123', name: '青木', role: 'staff', isActive: true }
+            ]);
+
+            // ログイン処理
+            const handleLogin = () => {
+                const user = users.find(u => 
+                    u.email === loginForm.email && 
+                    u.password === loginForm.password && 
+                    u.isActive
+                );
+
+                if (user) {
+                    setCurrentUser(user);
+                    setIsLoggedIn(true);
+                    setShowLogin(false);
+                    setLoginError('');
+                    setLoginForm({ email: '', password: '' });
+                } else {
+                    setLoginError('メールアドレスまたはパスワードが正しくありません');
+                }
+            };
+
+            // ログイン画面
+            if (!isLoggedIn) {
+                return React.createElement('div', { className: 'min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4' },
+                    React.createElement('div', { className: 'bg-white rounded-lg shadow-xl p-8 w-full max-w-md' },
+                        React.createElement('div', { className: 'text-center mb-8' },
+                            React.createElement('div', { className: 'bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4' },
+                                React.createElement(Lock, { className: 'h-8 w-8 text-blue-600' })
+                            ),
+                            React.createElement('h1', { className: 'text-2xl font-bold text-gray-900' }, '着付け案件管理システム'),
+                            React.createElement('p', { className: 'text-gray-600 mt-2' }, 'ログインしてください')
+                        ),
+                        React.createElement('div', { className: 'space-y-4' },
+                            React.createElement('div', null,
+                                React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'メールアドレス'),
+                                React.createElement('input', {
+                                    type: 'email',
+                                    className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                    placeholder: 'example@kimono.com',
+                                    value: loginForm.email,
+                                    onChange: (e) => setLoginForm({...loginForm, email: e.target.value}),
+                                    onKeyPress: (e) => e.key === 'Enter' && handleLogin()
+                                })
+                            ),
+                            React.createElement('div', null,
+                                React.createElement('label', { className: 'block text-sm font-medium text-gray-700 mb-2' }, 'パスワード'),
+                                React.createElement('input', {
+                                    type: 'password',
+                                    className: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500',
+                                    placeholder: 'パスワードを入力',
+                                    value: loginForm.password,
+                                    onChange: (e) => setLoginForm({...loginForm, password: e.target.value}),
+                                    onKeyPress: (e) => e.key === 'Enter' && handleLogin()
+                                })
+                            ),
+                            loginError && React.createElement('div', { className: 'bg-red-50 border border-red-200 rounded-lg p-3' },
+                                React.createElement('p', { className: 'text-red-600 text-sm' }, loginError)
+                            ),
+                            React.createElement('button', {
+                                onClick: handleLogin,
+                                className: 'w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200'
+                            }, 'ログイン')
+                        ),
+                        React.createElement('div', { className: 'mt-8 p-4 bg-gray-50 rounded-lg' },
+                            React.createElement('h3', { className: 'text-sm font-semibold text-gray-700 mb-2' }, 'デモアカウント'),
+                            React.createElement('div', { className: 'text-xs text-gray-600 space-y-1' },
+                                React.createElement('p', null, React.createElement('strong', null, '管理者:'), ' admin@kimono.com / admin123'),
+                                React.createElement('p', null, React.createElement('strong', null, '堀:'), ' hori@kimono.com / hori123'),
+                                React.createElement('p', null, React.createElement('strong', null, '大佐々:'), ' osasa@kimono.com / osasa123'),
+                                React.createElement('p', null, React.createElement('strong', null, '城ヶ原:'), ' jyogahara@kimono.com / jyoga123'),
+                                React.createElement('p', null, React.createElement('strong', null, '青木:'), ' aoki@kimono.com / aoki123')
+                            )
+                        )
+                    )
+                );
+            }
+
+            return React.createElement('div', { className: 'min-h-screen bg-gray-50' },
+                React.createElement('div', { className: 'bg-white shadow-sm border-b border-gray-200 p-4' },
+                    React.createElement('div', { className: 'flex items-center justify-between' },
+                        React.createElement('h1', { className: 'text-2xl font-bold text-gray-900' }, '着付け案件管理システム'),
+                        React.createElement('div', { className: 'flex items-center gap-4' },
+                            React.createElement('span', { className: 'text-sm text-gray-600' }, 'ログイン中: ', currentUser?.name),
+                            React.createElement('button', {
+                                onClick: () => setIsLoggedIn(false),
+                                className: 'flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900'
+                            }, React.createElement(LogOut), 'ログアウト')
+                        )
+                    )
+                ),
+                React.createElement('div', { className: 'p-8 text-center' },
+                    React.createElement('h2', { className: 'text-3xl font-bold text-green-600 mb-4' }, '🎉 デプロイ成功！'),
+                    React.createElement('p', { className: 'text-lg text-gray-700 mb-6' }, '着付け案件管理システムがWEBで動作しています！'),
+                    React.createElement('div', { className: 'bg-blue-50 border border-blue-200 rounded-lg p-6' },
+                        React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, '利用可能なデモアカウント'),
+                        React.createElement('div', { className: 'text-left space-y-2 max-w-md mx-auto' },
+                            React.createElement('p', null, '👑 管理者: admin@kimono.com / admin123'),
+                            React.createElement('p', null, '👤 堀: hori@kimono.com / hori123'),
+                            React.createElement('p', null, '👤 大佐々: osasa@kimono.com / osasa123'),
+                            React.createElement('p', null, '👤 城ヶ原: jyogahara@kimono.com / jyoga123'),
+                            React.createElement('p', null, '👤 青木: aoki@kimono.com / aoki123')
+                        )
+                    ),
+                    React.createElement('p', { className: 'text-sm text-gray-600 mt-6' }, 'ログアウト後、上記アカウントで再ログインしてシステムをお試しください')
+                )
+            );
+        };
+
+        ReactDOM.render(React.createElement(KimonoManagementSystem), document.getElementById('root'));
+    </script>
+</body>
+</html>
